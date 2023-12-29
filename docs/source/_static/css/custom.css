@@ -1,0 +1,38 @@
+/* col {
+    width: 50% !important;
+}
+
+class-header {
+    font-size: 120px;
+} */
+
+.field-list.simple p em {
+    color: #424874;
+}
+
+.field-list.simple p strong {
+    color: #654199;
+}
+
+html[data-theme=dark] .bd-content img:not(.only-dark):not(.dark-light) {
+    background: transparent;
+    border-radius: .25rem;
+    }
+
+/* for the drop-down card */
+/* .sd-summary-title.sd-card-header {
+    font-size: 23px;
+    color: #FF0000;
+} */
+
+/* for the individual cards */
+/* .sd-card-header p {
+    font-size: 23px;
+    color: #2A2A2A;
+}
+
+.code.literal {
+    color: #124AB1;
+    background-color: #FCFCFC;
+    border-radius: 0;
+} */

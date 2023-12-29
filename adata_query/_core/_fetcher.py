@@ -1,40 +1,46 @@
 
-# -- import packages: ----------------------------------------------------------
+# -- set typing: --------------------------------------------------------------
+from typing import Dict, List, Optional, Union
+
+
+# -- import packages: ---------------------------------------------------------
 import ABCParse
 import autodevice
 import anndata
 import torch as _torch
+import pandas as pd
 import numpy as np
 
 
-# -- import local dependencies: ------------------------------------------------
+# -- import local dependencies: -----------------------------------------------
 from ._locator import locate
 from ._formatter import format_data
 
 
-# -- set typing: ---------------------------------------------------------------
-from typing import Dict, List, Optional, Union
-
-
-# -- operational class: --------------------------------------------------------
+# -- operational class: -------------------------------------------------------
 class AnnDataFetcher(ABCParse.ABCParse):
-    """Operational class powering the fetch function."""
+    """AnnDataFetcher cls"""
     def __init__(self, *args, **kwargs):
-
+        """AnnDataFetcher __init__"""
         self.__parse__(locals(), public=[None])
 
     @property
-    def _GROUPED(self):
+    def _GROUPED(self) -> pd.core.groupby.DataFrameGroupBy:
+        """grouped data"""
         return self._adata.obs.groupby(self._groupby)
 
-    def _forward(self, adata, key):
+    def _forward(self, adata: anndata.AnnData, key: str) -> np.ndarray:
         if key == "X":
             data = getattr(adata, "X")
         else:
             data = getattr(adata, locate(adata, key))[key]
-        return format_data(data=data, torch = self._torch, device = self._device)
+        return format_data(data=data, torch=self._torch, device=self._device)
 
-    def _grouped_subroutine(self, adata, key):
+    def _grouped_subroutine(
+        self,
+        adata: anndata.AnnData,
+        key: str,
+    ) -> Union[List, Dict[str, np.ndarray]]:
         if self._as_dict:
             for group, group_df in self._GROUPED:
                 yield group, self._forward(adata[group_df.index], key)
@@ -50,35 +56,7 @@ class AnnDataFetcher(ABCParse.ABCParse):
         torch: bool = False,
         device: _torch.device = autodevice.AutoDevice(),
         as_dict: bool = True,
-    ):
-        """
-        adata: anndata.AnnData [ required ]
-            Annotated single-cell data object.
-        
-        key: str [ required ]
-            Key to access a matrix in adata. For example, if you wanted to access
-            adata.obsm['X_pca'], you would pass: "X_pca".
-        
-        groupby: Optional[str], default = None
-            Optionally, one may choose to group data according to a cell-specific
-            annotation in adata.obs. This would invoke returning data as List
-            
-        torch: bool, default = False
-            Boolean indicator of whether data should be formatted as torch.Tensor. If
-            False (default), data is formatted as np.ndarray.device (torch.device) =
-            autodevice.AutoDevice(). Should torch=True, the device ("cpu", "cuda:N", 
-            "mps:N") may be set. The default value, autodevice.AutoDevice() will 
-            indicate the use of GPU, if available.
-
-        device: torch.device, default = autodevice.AutoDevice()
-            
-    
-        as_dict: bool, default = True
-            Only relevant when `groupby` is not None. Boolean indicator to return
-            data in a Dict where the key for each value corresponds to the respective
-            `groupby` value. If False, returns List.
-        """
-
+    ) -> Union[List, Dict[str, np.ndarray]]:
         self.__update__(locals(), public=[None])
 
         if hasattr(self, "_groupby"):
@@ -87,6 +65,8 @@ class AnnDataFetcher(ABCParse.ABCParse):
             return list(self._grouped_subroutine(adata, key))
         return self._forward(adata, key)
 
+
+# -- API-facing function: -----------------------------------------------------
 def fetch(
     adata: anndata.AnnData,
     key: str,
@@ -101,44 +81,28 @@ def fetch(
     np.ndarray,
     List[Union[_torch.Tensor, np.ndarray]],
     Dict[Union[str, int], Union[_torch.Tensor, np.ndarray]],
-]:
-    """
-    Given, adata and a key that points to a specific matrix stored in adata,
-    return the data, formatted either as np.ndarray or torch.Tensor. If formatted
-    as torch.Tensor, device may be specified based on available devices.
+    ]:
+    """Fetch and format data [over indicated groups] for the desired key.
+    
+    Args:
+        adata (``anndata.AnnData``): The [annotated] single-cell data matrix of shape: ``[n_obs × n_vars]``. Rows correspond to cells and columns to genes. [1].
 
-    Parameters
-    ----------
-    adata: anndata.AnnData [ required ]
-        Annotated single-cell data object.
+        key (``str``): Key to access a matrix in adata. For example, if you wanted to access ``adata.obsm['X_pca']``, you would pass: ``"X_pca"``.
 
-    key: str [ required ]
-        Key to access a matrix in adata. For example, if you wanted to access
-        adata.obsm['X_pca'], you would pass: "X_pca".
+        groupby (``Optional[str]``): Optionally, one may choose to group data according to a cell-specific annotation in ``adata.obs``. This would invoke returning ``data`` as ``List``.
+            - **Default**: ``None``
 
-    groupby: Optional[str], default = None
-        Optionally, one may choose to group data according to a cell-specific
-        annotation in adata.obs. This would invoke returning data as List
+        torch (``Optional[bool]``): indicates whether data should be formatted as ``torch.Tensor``. If ``False`` (default), ``data`` formatted as ``np.ndarray``.
+            - **Default**: ``False``
 
-    torch: bool, default = False
-        Boolean indicator of whether data should be formatted as torch.Tensor. If
-        False (default), data is formatted as np.ndarray.device (torch.device) =
-        autodevice.AutoDevice(). Should torch=True, the device ("cpu", "cuda:N",
-        "mps:N") may be set. The default value, autodevice.AutoDevice() will
-        indicate the use of GPU, if available.
+        device (``Optional[torch.device]``): description.
+            - **Default**: ``autodevice.AutoDevice()``
 
-    as_dict: bool, default = True
-        Only relevant when `groupby` is not None. Boolean indicator to return
-        data in a Dict where the key for each value corresponds to the respective
-        `groupby` value. If False, returns List.
+        as_dict (``Optional[bool]``): Only relevant when ``groupby`` is not ``None``. Indicates whether ``data`` should be returned as ``Dict`` where the key for each value corresponds to the respective ``groupby`` value or, if ``False``, returns ``List``.
+            - **Default**: ``True``
 
-    Returns
-    -------
-    data: Union[torch.Tensor, np.ndarray, List[Union[torch.Tensor, np.ndarray]], Dict[Union[str, int], Union[torch.Tensor, np.ndarray]]
-        Formatted data as np.ndarray or torch.Tensor. If torch=True the torch.Tensor
-        is allocated to the device indicated by the device argument. If `groupby` is passed,
-        returned as Dict[np.ndarray] or Dict[torch.Tensor]. If groupby is passed and `as_dict`
-        = False, returns List[np.ndarray] or List[torch.Tensor].
+    Returns:
+        ``Union[Tensor,ndarray,List[Union[Tensor,ndarray]],Dict[Union[str, int],Union[Tensor,ndarray]]]``: ``data``
     """
 
     fetcher = AnnDataFetcher()

@@ -1,0 +1,14 @@
+sphinx
+pydata_sphinx_theme
+autodoc
+sphinxcontrib-napoleon
+nbsphinx
+sphinx-copybutton
+sphinx-favicon
+sphinx-design
+
+anndata>=0.10.3
+torch>=2.1.0
+autodevice>=0.0.2
+ABCParse>=0.0.7
+licorice_font>=0.0.3
