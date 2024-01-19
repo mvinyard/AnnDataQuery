@@ -1,19 +1,26 @@
 
-# -- import packages: ----------------------------------------------------------
+__name__ = "adata_query"
+
+
+# -- import packages: ---------------------------------------------------------
 import setuptools
 import re
 import os
 import sys
 
 
-# -- run setup: ----------------------------------------------------------------
-
+# -- fetch requirements, version: ---------------------------------------------
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
+with open(f'{__name__}/__version__.py') as v:
+    exec(v.read())
+
+
+# -- run setup: ---------------------------------------------------------------
 setuptools.setup(
-    name="adata_query",
-    version="0.0.2",
+    name=name,
+    version=__version__,
     python_requires=">3.9.0",
     author="Michael E. Vinyard",
     author_email="mvinyard.ai@gmail.com",
